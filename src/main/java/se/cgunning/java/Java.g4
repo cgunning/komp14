@@ -48,13 +48,15 @@ formalRest
 
 type
     : INT LBRACK RBRACK                     //#
+    | LONG LBRACK RBRACK                     //#
     | BOOLEAN                               //#
     | INT                                   //#
+    | LONG
     | ID                                    //#
     ;
 
 stmt
-    : LCURL stmt* RCURL                     #BlockStmt
+    : LCURL varDecl* stmt* RCURL            #BlockStmt
     | IF LPAR exp RPAR stmt ELSE stmt       #If
     | WHILE LPAR exp RPAR stmt              #While
     | SOUT LPAR exp RPAR END                #Sout
@@ -64,30 +66,30 @@ stmt
 
 exp
     : INT_LIT                               #IntLit
+    | LONG_LIT                              #LongLit
     | TRUE                                  #True
     | FALSE                                 #False
     | ID                                    #Id
     | THIS                                  #This
     | NEW INT LBRACK exp RBRACK             #NewIntArr
-    | NEW ID LPAR RPAR                      #NewObject
+    | NEW LONG LBRACK exp RBRACK            #NewLongArr
+    | exp LBRACK exp RBRACK                 #ArrAccess
+    | exp DOT ID RPAR expList LPAR          #MethodCall
+    | exp DOT 'length'                      #DotLength
     | NOT exp                               #NotExp
-    | LPAR exp RPAR                         #ParExp
+    | NEW ID LPAR RPAR                      #NewObject
     | exp PROD exp                          #Prod
     | exp SUB exp                           #Sub
     | exp ADD exp                           #Add
     | exp LESSTHAN exp                      #LessThan
+    | exp LESSTANOREQ exp                   #LessThanOrEqual
+    | exp GREATERTHAN exp                   #GreaterThan
+    | exp GREATERTHANOREQ exp               #GreaterThanOrEqual
+    | exp EQUALS exp                        #Equals
+    | exp NOTEQUALS exp                     #NotEquals
     | exp AND exp                           #And
-    | LBRACK exp RBRACK                     #BrackExp
-    | DOT 'length'                          #DotLength
-    | DOT ID RPAR expList LPAR              #MethodCall
-    ;
-
-op
-    : AND
-    | LESSTHAN
-    | ADD
-    | SUB
-    | PROD
+    | exp OR exp                            #Or
+    | LPAR exp RPAR                         #ParExp
     ;
 
 expList
@@ -105,9 +107,15 @@ PUBLIC : 'public' ;
 STATIC : 'static' ;
 
 ASSIGN : '=' ;
+OR : '||' ;
+EQUALS : '==' ;
+NOTEQUALS : '!=' ;
 END : ';' ;
 AND : '&&' ;
+LESSTANOREQ : '<=' ;
+GREATERTHANOREQ : '>=' ;
 LESSTHAN  : '<' ;
+GREATERTHAN  : '>' ;
 ADD : '+' ;
 SUB : '-' ;
 PROD : '*' ;
@@ -130,6 +138,7 @@ LPAR : '(' ;
 RPAR : ')' ;
 
 INT  : 'int' ;
+LONG : 'long' ;
 BOOLEAN : 'boolean' ;
 VOID : 'void' ;
 
@@ -142,5 +151,6 @@ NOT : '!' ;
 PACKAGE : (('a'..'z')+'.')+('a'..'z')+ ;
 ID : ('a'..'z')('a'..'z' | 'A'..'Z' | '0'..'9')* ;
 CLASSID : ('A'..'Z')('a'..'z' | 'A'..'Z' | '0'..'9')* ;
+LONG_LIT : '0'[lL] | '1'..'9'('0'..'9')*[lL] ;
 INT_LIT : '0' | '1'..'9'('0'..'9')* ;
 WS : (' ' | '\t' | '\n' | '\r' | '\f' )+ {skip();};

@@ -3,9 +3,11 @@ package se.cgunning.java.visitors;
 import org.antlr.v4.runtime.misc.NotNull;
 import se.cgunning.java.JavaBaseVisitor;
 import se.cgunning.java.JavaParser;
+import se.cgunning.java.errors.IncompatibleTypesError;
 import se.cgunning.java.models.JavaClass;
 import se.cgunning.java.models.JavaMethod;
-import se.cgunning.java.models.JavaVariable;
+import se.cgunning.java.models.JavaType;
+import se.cgunning.java.models.JavaType;
 
 import java.util.HashMap;
 
@@ -23,28 +25,13 @@ public class TypeCheckVisitor extends JavaBaseVisitor {
     }
 
     @Override
-    public Object visitPackageDecl(@NotNull JavaParser.PackageDeclContext ctx) {
-        return super.visitPackageDecl(ctx);
-    }
-
-    @Override
-    public Object visitBrackExp(@NotNull JavaParser.BrackExpContext ctx) {
-        return super.visitBrackExp(ctx);
+    public Object visitThis(@NotNull JavaParser.ThisContext ctx) {
+        return currentClass;
     }
 
     @Override
     public Object visitLessThan(@NotNull JavaParser.LessThanContext ctx) {
         return super.visitLessThan(ctx);
-    }
-
-    @Override
-    public Object visitExpRest(@NotNull JavaParser.ExpRestContext ctx) {
-        return super.visitExpRest(ctx);
-    }
-
-    @Override
-    public Object visitVarDecl(@NotNull JavaParser.VarDeclContext ctx) {
-        return super.visitVarDecl(ctx);
     }
 
     @Override
@@ -54,44 +41,56 @@ public class TypeCheckVisitor extends JavaBaseVisitor {
 
     @Override
     public Object visitMethodCall(@NotNull JavaParser.MethodCallContext ctx) {
-        return super.visitMethodCall(ctx);
+        JavaClass jc = (JavaClass) ctx.exp().accept(this);
+        JavaMethod jm = jc.getMethod(ctx.ID().getText());
+
+        if(jm == null)
+            System.out.println("ERROR - No such method");
+
+        int index = 0;
+        HashMap<Integer, JavaType> arguments = jm.getArguments();
+        // Kolla argument
+        JavaParser.ExpListContext el = ctx.expList();
+        JavaType jt = (JavaType) el.exp().accept(this);
+        if(!jt.equals(arguments.get(index++))) {
+            System.out.println("ERROR - mismatched arguments");
+        }
+        for(JavaParser.ExpRestContext er : el.expRest()) {
+            JavaType jtt = (JavaType) er.exp().accept(this);
+            if(!jtt.equals(arguments.get(index++))) {
+                System.out.println("ERROR - mismatched arguments");
+            }
+        }
+        if(index != arguments.size()) {
+            System.out.println("ERROR - not enough arguments");
+        }
+
+        return jm.getReturnType();
     }
 
     @Override
     public Object visitClassDecl(@NotNull JavaParser.ClassDeclContext ctx) {
         currentClass = classes.get(ctx.CLASSID().getText());
+        for(JavaParser.VarDeclContext varDecl : ctx.varDecl()) {
+            varDecl.accept(this);
+        }
 
-        return super.visitClassDecl(ctx);
-    }
+        for(JavaParser.MethodDeclContext methodDecl : ctx.methodDecl()) {
+            methodDecl.accept(this);
+        }
 
-    @Override
-    public Object visitThis(@NotNull JavaParser.ThisContext ctx) {
-        return super.visitThis(ctx);
+        currentClass = null;
+        return null;
     }
 
     @Override
     public Object visitFalse(@NotNull JavaParser.FalseContext ctx) {
-        return super.visitFalse(ctx);
+        return new JavaType("boolean");
     }
 
     @Override
     public Object visitNewIntArr(@NotNull JavaParser.NewIntArrContext ctx) {
-        return super.visitNewIntArr(ctx);
-    }
-
-    @Override
-    public Object visitFormalList(@NotNull JavaParser.FormalListContext ctx) {
-        return super.visitFormalList(ctx);
-    }
-
-    @Override
-    public Object visitExpList(@NotNull JavaParser.ExpListContext ctx) {
-        return super.visitExpList(ctx);
-    }
-
-    @Override
-    public Object visitMainClass(@NotNull JavaParser.MainClassContext ctx) {
-        return super.visitMainClass(ctx);
+        return new JavaType("int[]");
     }
 
     @Override
@@ -102,19 +101,29 @@ public class TypeCheckVisitor extends JavaBaseVisitor {
     @Override
     public Object visitMethodDecl(@NotNull JavaParser.MethodDeclContext ctx) {
         currentMethod = currentClass.getMethod(ctx.ID().getText());
-        ctx.
+        for(JavaParser.StmtContext stmt : ctx.stmt()) {
+            stmt.accept(this);
+        }
+        JavaType returnType = (JavaType) ctx.exp().accept(this);
+        System.out.println(currentMethod.getReturnType());
+        System.out.println(returnType);
+        if(!currentMethod.getReturnType().equals(returnType))
+            System.out.println("ERROR - incorrect return type");
         currentMethod = null;
-        return super.visitMethodDecl(ctx);
+        return null;
     }
 
     @Override
-    public Object visitFormalRest(@NotNull JavaParser.FormalRestContext ctx) {
-        return super.visitFormalRest(ctx);
-    }
-
-    @Overridectx.accept();
     public Object visitSub(@NotNull JavaParser.SubContext ctx) {
-        return super.visitSub(ctx);
+        JavaType type1 = (JavaType) ctx.exp(0).accept(this);
+        JavaType type2 = (JavaType) ctx.exp(1).accept(this);
+
+        if(!type1.equals(type2)) {
+            System.out.println("Mismatch in type");
+            return null;
+        }
+
+        return type1;
     }
 
     @Override
@@ -124,53 +133,74 @@ public class TypeCheckVisitor extends JavaBaseVisitor {
 
     @Override
     public Object visitNotExp(@NotNull JavaParser.NotExpContext ctx) {
-        return super.visitNotExp(ctx);
+        String type = (String) ctx.exp().accept(this);
+        if(type != "boolean") {
+            System.out.println("Not boolean");
+            return null;
+        }
+        return type;
     }
 
     @Override
     public Object visitIntLit(@NotNull JavaParser.IntLitContext ctx) {
-
-        return super.visitIntLit(ctx);
+        return new JavaType("int");
     }
 
     @Override
     public Object visitArrAssign(@NotNull JavaParser.ArrAssignContext ctx) {
-        System.out.println("HALALLALALA");
-        JavaVariable jv = null;
-        if(currentMethod != null)
-            jv = currentMethod.getVariable(ctx.ID().getText());
+        JavaType jt = getVariableIfInScope(ctx.ID().getText());
 
-        if(jv == null)
-            jv = currentClass.getVariable(ctx.ID().getText());
-
-        if(jv == null)
+        if(jt == null)
             System.out.println("Variabeln finns inte i scope");
 
-        return super.visitArrAssign(ctx);
+        JavaType jt1 = (JavaType) ctx.exp(0).accept(this);
+        if(!jt1.getType().equals("int"))
+            System.out.println("ERROR - not int in array index");
+
+        JavaType jt2 = (JavaType) ctx.exp(1).accept(this);
+
+        if(!getSingleTypeFromArray(jt).equals(jt2))
+            System.out.println("ERROR - missmatch in type in arr assign");
+
+        return jt;
+    }
+
+    @Override
+    public Object visitLongLit(@NotNull JavaParser.LongLitContext ctx) {
+        return new JavaType("long");
     }
 
     @Override
     public Object visitAssign(@NotNull JavaParser.AssignContext ctx) {
-        JavaVariable jv = null;
-        if(currentMethod != null)
-            jv = currentMethod.getVariable(ctx.ID().getText());
+        JavaType jt = getVariableIfInScope(ctx.ID().getText());
 
-        if(jv == null)
-            jv = currentClass.getVariable(ctx.ID().getText());
-
-        if(jv == null)
+        if(jt == null)
             System.out.println("Variabeln finns inte i scope");
-        return super.visitAssign(ctx);
+
+        JavaType jt2 = (JavaType) ctx.exp().accept(this);
+
+        if(!jt.equals(jt2))
+            System.out.println("ERROR - missmatch in type in assign");
+
+        return jt;
     }
 
     @Override
     public Object visitProd(@NotNull JavaParser.ProdContext ctx) {
-        return super.visitProd(ctx);
+        JavaType type1 = (JavaType) ctx.exp(0).accept(this);
+        JavaType type2 = (JavaType) ctx.exp(1).accept(this);
+
+        if(!type1.equals(type2)) {
+            System.out.println("Mismatch in type");
+            return null;
+        }
+
+        return type1;
     }
 
     @Override
     public Object visitNewObject(@NotNull JavaParser.NewObjectContext ctx) {
-        return super.visitNewObject(ctx);
+        return new JavaType(ctx.ID().getText());
     }
 
     @Override
@@ -180,12 +210,66 @@ public class TypeCheckVisitor extends JavaBaseVisitor {
 
     @Override
     public Object visitTrue(@NotNull JavaParser.TrueContext ctx) {
-        return super.visitTrue(ctx);
+        return new JavaType("boolean");
     }
 
     @Override
     public Object visitId(@NotNull JavaParser.IdContext ctx) {
-        return super.visitId(ctx);
+        JavaType jt = getVariableIfInScope(ctx.ID().getText());
+
+        if(jt == null)
+            System.out.println("Variabeln finns inte i scope");
+
+        return jt;
+    }
+
+    @Override
+    public Object visitNotEquals(@NotNull JavaParser.NotEqualsContext ctx) {
+        return checkCommonType(ctx.exp(0), ctx.exp(1));
+    }
+
+    @Override
+    public Object visitArrAccess(@NotNull JavaParser.ArrAccessContext ctx) {
+        // Check that this is an array
+        JavaType jt1 = (JavaType) ctx.exp(0).accept(this);
+        if(!jt1.getType().contains("[]"))
+            System.out.println("ERROR - array access on non array");
+
+        JavaType jt2 = (JavaType) ctx.exp(1).accept(this);
+        if(!jt2.getType().equals("int"))
+            System.out.println("ERROR - non integer in array access");
+
+        return new JavaType(jt1.getType().substring(0, jt1.getType().indexOf("[")));
+    }
+
+    @Override
+    public Object visitGreaterThanOrEqual(@NotNull JavaParser.GreaterThanOrEqualContext ctx) {
+        return checkCommonType(ctx.exp(0), ctx.exp(1));
+    }
+
+    @Override
+    public Object visitGreaterThan(@NotNull JavaParser.GreaterThanContext ctx) {
+        return checkCommonType(ctx.exp(0), ctx.exp(1));
+    }
+
+    @Override
+    public Object visitNewLongArr(@NotNull JavaParser.NewLongArrContext ctx) {
+        return super.visitNewLongArr(ctx);
+    }
+
+    @Override
+    public Object visitLessThanOrEqual(@NotNull JavaParser.LessThanOrEqualContext ctx) {
+        return checkCommonType(ctx.exp(0), ctx.exp(1));
+    }
+
+    @Override
+    public Object visitOr(@NotNull JavaParser.OrContext ctx) {
+        JavaType type = checkCommonType(ctx.exp(0), ctx.exp(1));
+
+        if(type != null && !type.getType().equals("boolean")) {
+            System.out.println("ERROR - not boolean in OR");
+        }
+        return type;
     }
 
     @Override
@@ -195,11 +279,46 @@ public class TypeCheckVisitor extends JavaBaseVisitor {
 
     @Override
     public Object visitParExp(@NotNull JavaParser.ParExpContext ctx) {
-        return super.visitParExp(ctx);
+        return (JavaType) ctx.exp().accept(this);
     }
 
     @Override
     public Object visitAnd(@NotNull JavaParser.AndContext ctx) {
-        return super.visitAnd(ctx);
+        String type1 = (String) ctx.exp(0).accept(this);
+        String type2 = (String) ctx.exp(1).accept(this);
+
+        if(!type1.equals(type2)) {
+            System.out.println("Mismatch in type");
+            return null;
+        }
+
+        return type1;
+    }
+
+    private JavaType getVariableIfInScope(String ID) {
+        JavaType jt = null;
+        if(currentMethod != null)
+            jt = currentMethod.getVariable(ID);
+
+        if(jt == null)
+            jt = currentClass.getVariable(ID);
+
+        return jt;
+    }
+
+    private JavaType getSingleTypeFromArray(JavaType array) {
+        return new JavaType(array.getType().substring(0, array.getType().indexOf("[")));
+    }
+
+    private JavaType checkCommonType(JavaParser.ExpContext exp1, JavaParser.ExpContext exp2) {
+        JavaType type1 = (JavaType) exp1.accept(this);
+        JavaType type2 = (JavaType) exp2.accept(this);
+
+        if(!type1.equals(type2)) {
+            System.out.println("Mismatch in type");
+            return null;
+        }
+
+        return type1;
     }
 }

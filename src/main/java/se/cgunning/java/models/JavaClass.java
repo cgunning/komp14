@@ -6,21 +6,29 @@ import java.util.HashMap;
  * Created by christoffergunning on 3/27/14.
  */
 public class JavaClass {
-    HashMap<String, JavaVariable> variables = new HashMap<String, JavaVariable>();
 
-    HashMap<String, JavaMethod> methods = new HashMap<String, JavaMethod>();
+    String ID;
+    HashMap<String, JavaType> variables = new HashMap<>();
+    HashMap<String, JavaMethod> methods = new HashMap<>();
 
-    public void addVariable(String id, JavaVariable variable) {
+    public JavaClass(String ID) {
+        this.ID = ID;
+    }
+
+    public String getID() {
+        return ID;
+    }
+
+    public void addVariable(String id, JavaType variable) {
         variables.put(id, variable);
     }
     public void addMethod(String id, JavaMethod method) {
         methods.put(id, method);
     }
 
-    public JavaVariable getVariable(String id) {
+    public JavaType getVariable(String id) {
         return variables.get(id);
     }
-
     public JavaMethod getMethod(String id) {
         return methods.get(id);
     }

@@ -16,7 +16,7 @@ import java.io.IOException;
 public class Main {
     public static void main(String args[]) {
         File file = new File("/home/christoffergunning/workspace/miniJava/src/main/java/se/cgunning/java/programs/P1.j");
-
+        int j = 0;
         System.out.println(file);
         FileInputStream fs = null;
 

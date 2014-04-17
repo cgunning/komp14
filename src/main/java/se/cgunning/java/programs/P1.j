@@ -14,8 +14,12 @@ class Test2 {
     public int test(int a, int b) {
         int u;
         int c;
-        v = k;
+        long i;
         u = c;
-        return 10 - (5 + 2);
+
+        i = 100L;
+
+
+        return 10 - (5 + 2 - u + (i - 2));
     }
 }

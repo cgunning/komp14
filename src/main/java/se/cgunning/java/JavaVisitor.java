@@ -1,4 +1,4 @@
-// Generated from Java.g4 by ANTLR 4.2
+// Generated from ./src/main/java/se/cgunning/java/Java.g4 by ANTLR 4.2
 
   package se.cgunning.java;
 
@@ -14,18 +14,18 @@ import org.antlr.v4.runtime.tree.ParseTreeVisitor;
  */
 public interface JavaVisitor<T> extends ParseTreeVisitor<T> {
 	/**
-	 * Visit a parse tree produced by {@link JavaParser#BrackExp}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitBrackExp(@NotNull JavaParser.BrackExpContext ctx);
-
-	/**
 	 * Visit a parse tree produced by {@link JavaParser#packageDecl}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitPackageDecl(@NotNull JavaParser.PackageDeclContext ctx);
+
+	/**
+	 * Visit a parse tree produced by {@link JavaParser#NotEquals}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitNotEquals(@NotNull JavaParser.NotEqualsContext ctx);
 
 	/**
 	 * Visit a parse tree produced by {@link JavaParser#LessThan}.
@@ -54,6 +54,13 @@ public interface JavaVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitArrAssign(@NotNull JavaParser.ArrAssignContext ctx);
+
+	/**
+	 * Visit a parse tree produced by {@link JavaParser#ArrAccess}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitArrAccess(@NotNull JavaParser.ArrAccessContext ctx);
 
 	/**
 	 * Visit a parse tree produced by {@link JavaParser#MethodCall}.
@@ -105,6 +112,13 @@ public interface JavaVisitor<T> extends ParseTreeVisitor<T> {
 	T visitFormalList(@NotNull JavaParser.FormalListContext ctx);
 
 	/**
+	 * Visit a parse tree produced by {@link JavaParser#GreaterThanOrEqual}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitGreaterThanOrEqual(@NotNull JavaParser.GreaterThanOrEqualContext ctx);
+
+	/**
 	 * Visit a parse tree produced by {@link JavaParser#While}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -124,6 +138,13 @@ public interface JavaVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitMainClass(@NotNull JavaParser.MainClassContext ctx);
+
+	/**
+	 * Visit a parse tree produced by {@link JavaParser#GreaterThan}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitGreaterThan(@NotNull JavaParser.GreaterThanContext ctx);
 
 	/**
 	 * Visit a parse tree produced by {@link JavaParser#Add}.
@@ -182,6 +203,13 @@ public interface JavaVisitor<T> extends ParseTreeVisitor<T> {
 	T visitNotExp(@NotNull JavaParser.NotExpContext ctx);
 
 	/**
+	 * Visit a parse tree produced by {@link JavaParser#LongLit}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitLongLit(@NotNull JavaParser.LongLitContext ctx);
+
+	/**
 	 * Visit a parse tree produced by {@link JavaParser#IntLit}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -196,6 +224,13 @@ public interface JavaVisitor<T> extends ParseTreeVisitor<T> {
 	T visitProd(@NotNull JavaParser.ProdContext ctx);
 
 	/**
+	 * Visit a parse tree produced by {@link JavaParser#NewLongArr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitNewLongArr(@NotNull JavaParser.NewLongArrContext ctx);
+
+	/**
 	 * Visit a parse tree produced by {@link JavaParser#NewObject}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -203,11 +238,25 @@ public interface JavaVisitor<T> extends ParseTreeVisitor<T> {
 	T visitNewObject(@NotNull JavaParser.NewObjectContext ctx);
 
 	/**
+	 * Visit a parse tree produced by {@link JavaParser#LessThanOrEqual}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitLessThanOrEqual(@NotNull JavaParser.LessThanOrEqualContext ctx);
+
+	/**
 	 * Visit a parse tree produced by {@link JavaParser#program}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitProgram(@NotNull JavaParser.ProgramContext ctx);
+
+	/**
+	 * Visit a parse tree produced by {@link JavaParser#Or}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitOr(@NotNull JavaParser.OrContext ctx);
 
 	/**
 	 * Visit a parse tree produced by {@link JavaParser#True}.
@@ -224,6 +273,13 @@ public interface JavaVisitor<T> extends ParseTreeVisitor<T> {
 	T visitSout(@NotNull JavaParser.SoutContext ctx);
 
 	/**
+	 * Visit a parse tree produced by {@link JavaParser#Equals}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitEquals(@NotNull JavaParser.EqualsContext ctx);
+
+	/**
 	 * Visit a parse tree produced by {@link JavaParser#Id}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -238,18 +294,18 @@ public interface JavaVisitor<T> extends ParseTreeVisitor<T> {
 	T visitDotLength(@NotNull JavaParser.DotLengthContext ctx);
 
 	/**
-	 * Visit a parse tree produced by {@link JavaParser#If}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitIf(@NotNull JavaParser.IfContext ctx);
-
-	/**
 	 * Visit a parse tree produced by {@link JavaParser#ParExp}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitParExp(@NotNull JavaParser.ParExpContext ctx);
+
+	/**
+	 * Visit a parse tree produced by {@link JavaParser#If}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitIf(@NotNull JavaParser.IfContext ctx);
 
 	/**
 	 * Visit a parse tree produced by {@link JavaParser#And}.

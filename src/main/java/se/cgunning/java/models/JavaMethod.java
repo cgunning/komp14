@@ -7,25 +7,40 @@ import java.util.HashMap;
  */
 public class JavaMethod {
 
+    String ID;
+    int argCount = 0;
+    HashMap<Integer, JavaType> arguments = new HashMap<>();
+    HashMap<String, JavaType> variables = new HashMap<String, JavaType>();
+    JavaType returnType = null;
 
-    HashMap<String, JavaVariable> arguments = new HashMap<String, JavaVariable>();
-
-    HashMap<String, JavaVariable> variables = new HashMap<String, JavaVariable>();
-
-    public void addArgument(String id, JavaVariable argument) {
-        arguments.put(id, argument);
+    public JavaMethod(String ID) {
+        this.ID = ID;
     }
 
-    public void addVariable(String id, JavaVariable variable) {
+    public void addArgument(String id, JavaType argument) {
+        arguments.put(argCount++, argument);
+    }
+
+    public void addVariable(String id, JavaType variable) {
         variables.put(id, variable);
     }
 
-    public JavaVariable getVariable(String id) {
+    public JavaType getVariable(String id) {
         return variables.get(id);
     }
 
-    public JavaVariable getArgument(String id) {
-        return arguments.get(id);
+    public JavaType getArgument(Integer index) {
+        return arguments.get(index);
+    }
+    public HashMap<Integer, JavaType> getArguments() {
+        return arguments;
+    }
+
+    public void setReturnType(JavaType type) {
+        returnType = type;
+    }
+    public JavaType getReturnType() {
+        return returnType;
     }
 
 }

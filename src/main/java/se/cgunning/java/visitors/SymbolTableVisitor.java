@@ -10,10 +10,9 @@ import se.cgunning.java.JavaParser;
 import se.cgunning.java.Main;
 import se.cgunning.java.models.JavaClass;
 import se.cgunning.java.models.JavaMethod;
-import se.cgunning.java.models.JavaVariable;
+import se.cgunning.java.models.JavaType;
 
 import java.util.HashMap;
-
 
 public class SymbolTableVisitor extends JavaBaseVisitor {
 
@@ -30,11 +29,6 @@ public class SymbolTableVisitor extends JavaBaseVisitor {
 
     @Override
     public Object visitPackageDecl(@NotNull JavaParser.PackageDeclContext ctx) {
-        return null;
-    }
-
-    @Override
-    public Object visitBrackExp(@NotNull JavaParser.BrackExpContext ctx) {
         return null;
     }
 
@@ -60,9 +54,9 @@ public class SymbolTableVisitor extends JavaBaseVisitor {
 
     @Override
     public Object visitClassDecl(@NotNull JavaParser.ClassDeclContext ctx) {
-        JavaClass jc = new JavaClass();
+        JavaClass jc = new JavaClass(ctx.CLASSID().getText());
         for(JavaParser.VarDeclContext v : ctx.varDecl()) {
-            JavaVariable jv = new JavaVariable();
+            JavaType jv = new JavaType();
             jv.setType(v.type().getText());
             jc.addVariable(v.ID().getText(), jv);
             System.out.println(v.ID().getText());
@@ -70,7 +64,7 @@ public class SymbolTableVisitor extends JavaBaseVisitor {
         for(JavaParser.MethodDeclContext m : ctx.methodDecl()) {
             jc.addMethod(m.ID().getText(), (JavaMethod) visit(m));
         }
-        classes.put(ctx.CLASSID().getText(), jc);
+        classes.put(jc.getID(), jc);
         return null;
     }
 
@@ -111,22 +105,23 @@ public class SymbolTableVisitor extends JavaBaseVisitor {
 
     @Override
     public Object visitMethodDecl(@NotNull JavaParser.MethodDeclContext ctx) {
-        JavaMethod jm = new JavaMethod();
+        JavaMethod jm = new JavaMethod(ctx.ID().getText());
 
-        JavaVariable jv = new JavaVariable();
+        JavaType jv = new JavaType();
         jv.setType(ctx.formalList().type().getText());
         jm.addArgument(ctx.formalList().ID().getText(), jv);
 
         for(JavaParser.FormalRestContext fr : ctx.formalList().formalRest()) {
-            jv = new JavaVariable();
+            jv = new JavaType();
             jv.setType(fr.type().getText());
             jm.addArgument(fr.ID().getText(), jv);
         }
-        // Lägg till argument
+
+        jm.setReturnType(new JavaType(ctx.type().getText()));
 
         for(JavaParser.VarDeclContext v : ctx.varDecl()) {
             // Add to variables in jm
-            jv = new JavaVariable();
+            jv = new JavaType();
             jv.setType(v.type().getText());
             jm.addVariable(v.ID().getText(), jv);
         }
@@ -218,43 +213,4 @@ public class SymbolTableVisitor extends JavaBaseVisitor {
         return super.visitErrorNode(node);
     }
 
-    @Override
-    protected Object defaultResult() {
-        return super.defaultResult();
-    }
-
-    @Override
-    protected Object aggregateResult(Object aggregate, Object nextResult) {
-        return super.aggregateResult(aggregate, nextResult);
-    }
-
-    @Override
-    protected boolean shouldVisitNextChild(@NotNull RuleNode node, Object currentResult) {
-        return super.shouldVisitNextChild(node, currentResult);
-    }
-
-    @Override
-    public int hashCode() {
-        return super.hashCode();
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        return super.equals(obj);
-    }
-
-    @Override
-    protected Object clone() throws CloneNotSupportedException {
-        return super.clone();
-    }
-
-    @Override
-    public String toString() {
-        return super.toString();
-    }
-
-    @Override
-    protected void finalize() throws Throwable {
-        super.finalize();
-    }
 }
