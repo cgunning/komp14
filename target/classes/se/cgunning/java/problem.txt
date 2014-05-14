@@ -1,0 +1,18 @@
+/home/christoffergunning/workspace/miniJava/tests/student-tests-2014/noncompile/2014G19/returninmain.java
+/home/christoffergunning/workspace/miniJava/tests/student-tests-2014/noncompile/2014G19/invalidoperators1.java (och de där med dubbla '**' och '<<' osv.)
+/home/christoffergunning/workspace/miniJava/tests/student-tests-2014/noncompile/2014L03/VariableShadowingError.java (tolkar var olika som returntype och i metoden. Får tillåtas utan möjlighet till 'this.[variabel]'?)
+/home/christoffergunning/workspace/miniJava/tests/student-tests-2014/noncompile/2014L05/badmain.java
+/home/christoffergunning/workspace/miniJava/tests/student-tests-2014/noncompile/2014G22/LinkedList.java
+
+cycliska ärvanden.
+saker som krashar när de inte matchar.
+metoder och variabler med samma namn.
+Fixa if och while
+Lägga till koll för superklasser som inte finns
+Definition av objekt av klasse som inte finns
+Kalla metoder på onitialiserade object
+Spärra anrop av main-funktion
+max för long.
+
+?????
+tilldelning av för stor int till long (konvertera?)

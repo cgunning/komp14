@@ -16,19 +16,19 @@ program
 
 
 mainClass
-    : CLASS ID LCURL PUBLIC STATIC VOID 'main' LPAR 'String' LBRACK RBRACK ID RPAR LCURL varDecl* stmt* RCURL RCURL
+    : CLASS CLASSID LCURL PUBLIC STATIC VOID 'main' LPAR 'String' LBRACK RBRACK ID RPAR LCURL varDecl* stmt* RCURL RCURL
     ;
 
 classDecl
-    : CLASS ID LCURL varDecl* methodDecl* RCURL
+    : CLASS CLASSID LCURL varDecl* methodDecl* RCURL
     ;
 
 methodDecl
-    : PUBLIC type ID LPAR formalList RPAR LCURL varDecl* stmt* 'return' exp ';' RCURL
+    : PUBLIC type ID LPAR formalList RPAR LCURL varDecl* stmt* 'return' exp END RCURL
     ;
     
 varDecl
-    : type ID ';'
+    : type ID END
     ;
 
 
@@ -42,59 +42,58 @@ formalRest
     ;
 
 type
-    : INT LBRACK RBRACK
-    | BOOLEAN
-    | INT
-    | ID
+    : INT LBRACK RBRACK                     //#
+    | LONG LBRACK RBRACK                     //#
+    | BOOLEAN                               //#
+    | INT                                   //#
+    | LONG
+    | CLASSID                                    //#
     ;
 
 stmt
-    : LCURL stmt* RCURL
-    | IF LPAR exp RPAR stmt ELSE stmt
-    | WHILE LPAR exp RPAR stmt
-    | SYSO LPAR exp RPAR ';'
-    | ID '=' exp ';'
-    | ID LBRACK exp RBRACK '=' exp ';'
+    : LCURL varDecl* stmt* RCURL            #BlockStmt
+    | IF LPAR exp RPAR stmt ELSE stmt       #If
+    | WHILE LPAR exp RPAR stmt              #While
+    | SOUT LPAR exp RPAR END                #Sout
+    | ID ASSIGN exp END                     #Assign
+    | ID LBRACK exp RBRACK ASSIGN exp END   #ArrAssign
     ;
 
 exp
-    : exp1 exp2*
-    ;
-
-exp1
-    : INT_LIT
-    | TRUE
-    | FALSE
-    | ID
-    | THIS
-    | NEW INT LBRACK exp1 RBRACK
-    | NEW ID LPAR RPAR
-    | NOT exp1
-    | LPAR exp RPAR
-    ;
-
-exp2
-    : op exp
-    | LBRACK exp1 RBRACK
-    | DOT 'length'
-    | DOT ID RPAR expList LPAR
-    ;
-
-op
-    : AND
-    | LESSTHAN
-    | ADD
-    | SUB
-    | PROD
+    : INT_LIT                               #IntLit
+    | LONG_LIT                              #LongLit
+    | TRUE                                  #True
+    | FALSE                                 #False
+    | ID                                    #Id
+    | NEW INT LBRACK exp RBRACK             #NewIntArr
+    | NEW LONG LBRACK exp RBRACK            #NewLongArr
+    | exp LBRACK exp RBRACK                 #ArrAccess
+    | exp DOT ID LPAR expList RPAR          #MethodCall
+    | exp DOT 'length'                      #DotLength
+    | THIS                                  #This
+    | NOT exp                               #NotExp
+    | NEW CLASSID LPAR RPAR                 #NewObject
+    | exp PROD exp                          #Prod
+    | exp SUB exp                           #Sub
+    | exp ADD exp                           #Add
+    | exp LESSTHAN exp                      #LessThan
+    | exp LESSTANOREQ exp                   #LessThanOrEqual
+    | exp GREATERTHAN exp                   #GreaterThan
+    | exp GREATERTHANOREQ exp               #GreaterThanOrEqual
+    | exp EQUALS exp                        #Equals
+    | exp NOTEQUALS exp                     #NotEquals
+    | exp AND exp                           #And
+    | exp OR exp                            #Or
+    | LPAR exp RPAR                         #ParExp
     ;
 
 expList
-    : exp1 expRest*
+    : exp expRest*
     |
     ;
 
 expRest
-    : ',' exp1
+    : ',' exp
     ;
 
 
@@ -102,8 +101,16 @@ PUBLIC : 'public' ;
 
 STATIC : 'static' ;
 
+ASSIGN : '=' ;
+OR : '||' ;
+EQUALS : '==' ;
+NOTEQUALS : '!=' ;
+END : ';' ;
 AND : '&&' ;
+LESSTANOREQ : '<=' ;
+GREATERTHANOREQ : '>=' ;
 LESSTHAN  : '<' ;
+GREATERTHAN  : '>' ;
 ADD : '+' ;
 SUB : '-' ;
 PROD : '*' ;
@@ -116,7 +123,7 @@ ELSE : 'else' ;
 WHILE : 'while' ;
 FOR : 'for' ;
 
-SYSO : 'System.out.println' ;
+SOUT : 'System.out.println' ;
 
 LCURL : '{' ;
 RCURL : '}' ;
@@ -126,6 +133,7 @@ LPAR : '(' ;
 RPAR : ')' ;
 
 INT  : 'int' ;
+LONG : 'long' ;
 BOOLEAN : 'boolean' ;
 VOID : 'void' ;
 
@@ -136,5 +144,7 @@ THIS : 'this' ;
 NOT : '!' ;
 
 ID : ('a'..'z')('a'..'z' | 'A'..'Z' | '0'..'9')* ;
+CLASSID : ('A'..'Z')('a'..'z' | 'A'..'Z' | '0'..'9')* ;
+LONG_LIT : '0'[lL] | '1'..'9'('0'..'9')*[lL] ;
 INT_LIT : '0' | '1'..'9'('0'..'9')* ;
 WS : (' ' | '\t' | '\n' | '\r' | '\f' )+ {skip();};

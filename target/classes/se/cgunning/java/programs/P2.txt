@@ -1,0 +1,29 @@
+class EX7 {
+    public static void main(String[] args) {
+        System.out.println(new B().bm1(10, 20));
+    }
+}
+
+class B {
+
+    public int bm1(int bp1, int bp2) {
+        int j;
+        j = this.bm2(bp1, bp2);
+        return 10;
+    }
+
+    public int bm2(int bp1, int bp2) {
+        int j;
+        int k;
+        int l;
+
+        j = 10;
+        k = 2;
+        l = 20;
+
+        j = 1 + 10 + (100 - j);
+
+        return j;
+    }
+
+}

@@ -1,0 +1,19 @@
+class Main {
+
+    public static void main(String[] args) {
+        Test t;
+
+        t = new Test();
+
+        System.out.println(100L);
+    }
+
+}
+
+class Test {
+
+    public int test(int d, boolean b) {
+
+        return d * d;
+    }
+}
