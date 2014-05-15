@@ -88,10 +88,13 @@
     
         @Override
         public Object visitExpList(@NotNull JavaParser.ExpListContext ctx) {
-            int size = (int) ctx.exp().accept(this);
+            int size = 0;
+            if(ctx.exp() != null) {
+                size += (int) ctx.exp().accept(this);
 
-            for(JavaParser.ExpRestContext expRest : ctx.expRest()) {
-                size += (int) expRest.exp().accept(this);
+                for (JavaParser.ExpRestContext expRest : ctx.expRest()) {
+                    size += (int) expRest.exp().accept(this);
+                }
             }
 
             return size;

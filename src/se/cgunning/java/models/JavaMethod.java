@@ -40,6 +40,10 @@ public class JavaMethod {
         return variables.get(id);
     }
 
+    public HashMap<String, JavaType> getVariables() {
+        return variables;
+    }
+
     public JavaType getArgument(Integer index) {
         return arguments.get(index);
     }

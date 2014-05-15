@@ -5,7 +5,8 @@ class Main {
 
         t = new Test();
 
-        System.out.println(100L);
+        System.out.println(t.test(100, false));
+        System.out.println(t.getLong());
     }
 
 }
@@ -13,7 +14,22 @@ class Main {
 class Test {
 
     public int test(int d, boolean b) {
-
+        int y;
         return d * d;
+    }
+
+    public long getLong() {
+        long k;
+
+        {
+            long f;
+            {
+                long a;
+                a = 10L;
+                f = a;
+            }
+            k = f * 2L;
+        }
+        return k;
     }
 }
