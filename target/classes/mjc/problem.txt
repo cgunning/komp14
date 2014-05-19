@@ -1,0 +1,8 @@
+/home/christoffergunning/workspace/miniJava/tests/student-tests-2014/noncompile/2014G19/returninmain.java
+/home/christoffergunning/workspace/miniJava/tests/student-tests-2014/noncompile/2014G19/invalidoperators1.java (och de där med dubbla '**' och '<<' osv.)
+/home/christoffergunning/workspace/miniJava/tests/student-tests-2014/noncompile/2014L03/VariableShadowingError.java (tolkar var olika som returntype och i metoden. Får tillåtas utan möjlighet till 'this.[variabel]'?)
+/home/christoffergunning/workspace/miniJava/tests/student-tests-2014/noncompile/2014L05/badmain.java
+/home/christoffergunning/workspace/miniJava/tests/student-tests-2014/noncompile/2014G22/LinkedList.java
+
+?????
+tilldelning av för stor int till long (konvertera?)
