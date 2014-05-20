@@ -30,12 +30,14 @@ public class JavaClass {
     }
 
     public void addVariable(String id, JavaType variable) {
-        if(variables.containsKey(variable))
+        if(isVariableAlreadyUsed(id))
             System.exit(1);
 
         variables.put(id, variable);
     }
     public void addMethod(String id, JavaMethod method) {
+        if(methods.keySet().contains(id))
+            System.exit(1);
         methods.put(id, method);
     }
 
@@ -47,5 +49,12 @@ public class JavaClass {
     }
     public JavaMethod getMethod(String id) {
         return methods.get(id);
+    }
+
+    public boolean isVariableAlreadyUsed(String variableID) {
+        if(variables.containsKey(variableID))
+            return true;
+
+        return false;
     }
 }

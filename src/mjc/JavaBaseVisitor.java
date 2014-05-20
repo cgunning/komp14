@@ -1,4 +1,4 @@
-// Generated from ./src/mjc/Java.g4 by ANTLR 4.2
+// Generated from Java.g4 by ANTLR 4.2
 
   package mjc;
 

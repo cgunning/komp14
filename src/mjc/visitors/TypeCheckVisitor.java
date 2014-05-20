@@ -232,6 +232,16 @@ public class TypeCheckVisitor extends JavaBaseVisitor {
     @Override
     public Object visitMethodDecl(@NotNull JavaParser.MethodDeclContext ctx) {
         currentMethod = currentClass.getMethod(ctx.ID().getText());
+
+        for(Integer index : currentMethod.getArguments().keySet()) {
+            String type = currentMethod.getArgument(index).getType();
+            if(!type.equals("int") && !type.equals("long") && !type.equals("boolean") && !type.equals("int[]") && !type.equals("long[]")) {
+                if(!classes.keySet().contains(type)) {
+                    addError(ctx, "No such type(" + type + ")");
+                }
+            }
+        }
+
         for(JavaParser.VarDeclContext varDecl : ctx.varDecl())
             varDecl.accept(this);
         for(JavaParser.StmtContext stmt : ctx.stmt()) {
@@ -254,7 +264,7 @@ public class TypeCheckVisitor extends JavaBaseVisitor {
         String type = ctx.type().getText();
         if(!type.equals("int") && !type.equals("long") && !type.equals("boolean") && !type.equals("int[]") && !type.equals("long[]")) {
             if(!classes.keySet().contains(type)) {
-                addError(ctx, "No such class(" + ctx.type().getText() + ")");
+                addError(ctx, "No such type(" + type + ")");
             }
         }
         return null;
@@ -387,17 +397,13 @@ public class TypeCheckVisitor extends JavaBaseVisitor {
             addError(ctx, "Variabeln " + ctx.ID().getText() + " finns inte i scope");
             return null;
         }
-
         JavaType jt2 = (JavaType) ctx.exp().accept(this);
 
+        System.out.println("Assign between " + jt.getID() + jt.getType() + " and " + jt2.getID() + jt2.getType());
         if(jt2 == null) {
             return null;
         }
-        if(!isCompatibleTypes(jt, jt2)) {
-
-            if(jt.getType().equals("long") && jt2.getType().equals("int")) {
-                return jt;
-            }
+        if(!isCompatibleTypes(jt, jt2) || jt.getType().equals("int") && jt2.getType().equals("long")) {
             addError(ctx, "Missmatch in type in assign with variables: " + jt.getID() + "(" + jt.getType() + ") and " + jt2.getID() + "(" + jt2.getType() + ")");
             return null;
         }
@@ -454,7 +460,8 @@ public class TypeCheckVisitor extends JavaBaseVisitor {
     @Override
     public Object visitId(@NotNull JavaParser.IdContext ctx) {
         JavaType jt = getVariableIfInScope(ctx.ID().getText());
-
+        if(jt.getID().equals("b"))
+            System.out.println(jt.getType());
         if(jt == null) {
             addError(ctx, "Variabeln " + ctx.ID().getText() + " finns inte i scope");
         }
@@ -464,7 +471,7 @@ public class TypeCheckVisitor extends JavaBaseVisitor {
     @Override
     public Object visitSout(@NotNull JavaParser.SoutContext ctx) {
         JavaType type = (JavaType) ctx.exp().accept(this);
-        if(type == null) {
+        if(type == null || !isPrimitiveType(type.getType())) {
             addError(ctx, "Invalid argument to sout");
         }
         return null;
@@ -484,6 +491,10 @@ public class TypeCheckVisitor extends JavaBaseVisitor {
 
     @Override
     public Object visitArrAccess(@NotNull JavaParser.ArrAccessContext ctx) {
+        // Can't be array access on a new array
+        if(ctx.exp(0) instanceof JavaParser.NewIntArrContext || ctx.exp(0) instanceof JavaParser.NewLongArrContext)
+            System.exit(1);
+
         // Check that this is an array
         JavaType jt1 = (JavaType) ctx.exp(0).accept(this);
         if(!jt1.getType().contains("[]"))
@@ -523,12 +534,9 @@ public class TypeCheckVisitor extends JavaBaseVisitor {
         if(type1 == null || type2 == null)
             return null;
 
-        if(type1.equals(type2) && (type1.getType().equals("int") || type1.getType().equals("long"))) {
-            return new JavaType(null, "boolean", 0);
-        } else if(type1.getType().equals("int") && type2.getType().equals("long") || type1.getType().equals("long") && type2.getType().equals("int")){
+        if(isCompatibleTypes(type1, type2) && (type1.getType().equals("int") || type1.getType().equals("long"))) {
             return new JavaType(null, "boolean", 0);
         }
-
         addError(ctx, "Mismatch in type in >");
         return null;
     }
@@ -549,9 +557,7 @@ public class TypeCheckVisitor extends JavaBaseVisitor {
         if(type1 == null || type2 == null)
             return null;
 
-        if(type1.equals(type2) && (type1.getType().equals("int") || type1.getType().equals("long"))) {
-            return new JavaType(null, "boolean", 0);
-        } else if(type1.getType().equals("int") && type2.getType().equals("long") || type1.getType().equals("long") && type2.getType().equals("int")){
+        if(isCompatibleTypes(type1, type2) && (type1.getType().equals("int") || type1.getType().equals("long"))) {
             return new JavaType(null, "boolean", 0);
         }
 
@@ -631,8 +637,7 @@ public class TypeCheckVisitor extends JavaBaseVisitor {
                 }
             }
         }
-        if(currentClass == null)
-            System.out.println("null WTF! " + ID);
+
         if(jt == null)
             jt = currentClass.getVariable(ID);
         if(jt == null && ID.equals("sub1"))
@@ -705,5 +710,11 @@ public class TypeCheckVisitor extends JavaBaseVisitor {
                     superClassName = null;
             }
         }
+    }
+
+    private boolean isPrimitiveType(String type) {
+        if(type.equals("int") || type.equals("long") || type.equals("boolean"))
+            return true;
+        return false;
     }
 }

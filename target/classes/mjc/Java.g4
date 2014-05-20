@@ -36,7 +36,7 @@ varDecl
     ;
 
 mainMethod
-    : 'public static void main' LPAR 'String' LBRACK RBRACK ID RPAR LCURL varDecl* stmt* RCURL
+    : PUBLIC STATIC VOID ID LPAR 'String' LBRACK RBRACK ID RPAR LCURL varDecl* stmt* RCURL
     ;
 
 formalList
@@ -105,7 +105,6 @@ expRest
 
 
 PUBLIC : 'public' ;
-
 STATIC : 'static' ;
 
 RETURN : 'return' ;

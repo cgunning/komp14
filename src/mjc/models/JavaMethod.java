@@ -30,11 +30,13 @@ public class JavaMethod {
     }
 
     public void addArgument(String id, JavaType argument) {
+        if(isVariableAlreadyUsed(id))
+            System.exit(1);
         arguments.put(argCount++, argument);
     }
 
     public void addVariable(String id, JavaType variable) {
-        if(isVariableAlreadyUsed(variable.getID()))
+        if(isVariableAlreadyUsed(id))
             System.exit(1);
 
         variables.put(id, variable);

@@ -62,6 +62,8 @@ public class SymbolTableVisitor extends JavaBaseVisitor {
         for(JavaParser.MethodDeclContext m : ctx.methodDecl()) {
             jc.addMethod(m.ID().getText(), (JavaMethod) m.accept(this));
         }
+        if(classes.keySet().contains(jc.getID()))
+            System.exit(1);
         classes.put(jc.getID(), jc);
         uglyCheck();
         return null;
@@ -70,7 +72,6 @@ public class SymbolTableVisitor extends JavaBaseVisitor {
     @Override
     public Object visitBlockStmt(@NotNull JavaParser.BlockStmtContext ctx) {
         BlockStmt blockStmt = new BlockStmt(ctx.getStart().getLine());
-        System.out.println("Added blockStmt at line: " + ctx.getStart().getLine());
 
         for(JavaParser.VarDeclContext v : ctx.varDecl()) {
             blockStmt.addVariable(v.ID().getText(), new JavaType(v.ID().getText(), v.type().getText(), ctx.getStart().getLine()));
@@ -139,11 +140,15 @@ public class SymbolTableVisitor extends JavaBaseVisitor {
         JavaClass jc = new JavaClass(ctx.ID().getText());
         jc.addMethod("main", (JavaMethod) ctx.mainMethod().accept(this));
         classes.put(jc.getID(), jc);
+        uglyCheck();
         return null;
     }
 
     @Override
     public Object visitMainMethod(@NotNull JavaParser.MainMethodContext ctx) {
+        if(!ctx.ID(0).getText().equals("main")) {
+            System.exit(1);
+        }
         JavaMethod jm = new JavaMethod("main");
         for(JavaParser.VarDeclContext v : ctx.varDecl()) {
             jm.addVariable(v.ID().getText(), new JavaType(v.ID().getText(), v.type().getText(), ctx.getStart().getLine()));
@@ -153,10 +158,12 @@ public class SymbolTableVisitor extends JavaBaseVisitor {
             Object o = stmt.accept(this);
 
             if(o instanceof BlockStmt) {
-                jm.addBlockStmt((BlockStmt) o);
+                BlockStmt block = (BlockStmt) o;
+                block.setSuperMethod(jm);
+                jm.addBlockStmt(block);
             }
         }
-        jm.setMainMethod();;
+        jm.setMainMethod();
         return jm;
     }
 
@@ -195,7 +202,6 @@ public class SymbolTableVisitor extends JavaBaseVisitor {
             if(o instanceof BlockStmt) {
                 BlockStmt block = (BlockStmt) o;
                 block.setSuperMethod(jm);
-                System.out.println("Added blockstatement to " + jm.getID());
                 jm.addBlockStmt(block);
             }
         }
@@ -269,10 +275,17 @@ public class SymbolTableVisitor extends JavaBaseVisitor {
     private void uglyCheck() {
         BlockStmt blockStmt;
         for(int blockID : blockStmts.keySet()) {
+            System.out.println("checking block at line " + blockID);
             blockStmt = blockStmts.get(blockID);
             for(String variableID : blockStmt.getVariables().keySet()) {
-                BlockStmt currentBlock = blockStmt.getSuperBlock();
+                System.out.println("checking variable " + variableID + " int block at line " + blockID);
 
+                if(blockStmt.getSuperBlock() == null) {
+                    if(blockStmt.getSuperMethod() != null && blockStmt.getSuperMethod().isVariableAlreadyUsed(variableID))
+                        System.exit(1);
+                }
+
+                BlockStmt currentBlock = blockStmt.getSuperBlock();
                 while(currentBlock != null) {
                     if(currentBlock.isVariableAlreadyUsed(variableID))
                         System.exit(1);

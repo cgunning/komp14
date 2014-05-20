@@ -37,7 +37,7 @@ public class JVMMain {
 
         // create a CharStream that reads from standard input
         ANTLRInputStream input = null;
-        ANTLRErrorListener errorListener = new ANTLRErrorListener() {
+        ANTLRErrorListener parserErrorListener = new ANTLRErrorListener() {
             @Override
             public void syntaxError(@NotNull Recognizer<?, ?> recognizer, @Nullable Object o, int i, int i2, @NotNull String s, @Nullable RecognitionException e) {
                 System.exit(1);
@@ -57,6 +57,30 @@ public class JVMMain {
             public void reportContextSensitivity(@NotNull Parser parser, @NotNull DFA dfa, int i, int i2, int i3, @NotNull ATNConfigSet atnConfigs) {
 
             }
+
+        };
+
+        ANTLRErrorListener lexerErrorListener = new ANTLRErrorListener() {
+            @Override
+            public void syntaxError(@NotNull Recognizer<?, ?> recognizer, @Nullable Object o, int i, int i2, @NotNull String s, @Nullable RecognitionException e) {
+                System.exit(1);
+            }
+
+            @Override
+            public void reportAmbiguity(@NotNull Parser parser, @NotNull DFA dfa, int i, int i2, boolean b, @Nullable BitSet bitSet, @NotNull ATNConfigSet atnConfigs) {
+
+            }
+
+            @Override
+            public void reportAttemptingFullContext(@NotNull Parser parser, @NotNull DFA dfa, int i, int i2, @Nullable BitSet bitSet, @NotNull ATNConfigSet atnConfigs) {
+
+            }
+
+            @Override
+            public void reportContextSensitivity(@NotNull Parser parser, @NotNull DFA dfa, int i, int i2, int i3, @NotNull ATNConfigSet atnConfigs) {
+
+            }
+
         };
 
         try {
@@ -69,11 +93,13 @@ public class JVMMain {
 
         // create a lexer that feeds off of input CharStream
         JavaLexer lexer = new JavaLexer(input);
+        lexer.addErrorListener(lexerErrorListener);
         // create a buffer of tokens pulled from the lexer
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         // create a parser that feeds off the tokens buffer
         JavaParser parser = new JavaParser(tokens);
-        parser.addErrorListener(errorListener);
+        parser.addErrorListener(parserErrorListener);
+
         ParseTree tree = parser.program(); // begin parsing at program rule
         System.out.println(tree.toStringTree(parser)); // print LISP-style tree
         // Symbol table
