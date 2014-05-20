@@ -235,31 +235,28 @@ public class JasminVisitor extends JavaBaseVisitor {
         // TODO - Helt fel!!!!!!!
         prepareTypeChecker();
         String s = "";
-        JavaType jt = ((JavaType) typeCheckVisitor.visit(ctx.exp(0)));
+        JavaType jt = getVariableFromId(ctx.ID().getText());
         String arrayType = jt.getType();
-        if(jt == null)
-            System.out.println(ctx.getText());
+
         if(jt.isClassVariable()) {
+            System.out.println("CLASSVAR");
             s += "aload 0\ngetfield " + currentClass + "/" + jt.getID() + " " + getDescriptorFromType(jt.getType()) + "\n";
-            s += ctx.exp(0).accept(this);
-            s += ctx.exp(1).accept(this);
-            s += "aastore\n";
         } else {
-            switch (arrayType) {
-                case "int[]":
-                    s += "aload " + offset.get(ctx.ID().getText()) + "\n";
-                    s += ctx.exp(0).accept(this);
-                    s += ctx.exp(1).accept(this);
-                    s += "iastore\n";
-                    break;
-                case "long[]":
-                    s += "aload + " + offset.get(ctx.ID().getText()) + "\n";
-                    s += ctx.exp(0).accept(this);
-                    s += ctx.exp(1).accept(this);
-                    s += "lastore\n";
-                    break;
-            }
+            s += "aload " + offset.get(ctx.ID().getText()) + "\n";
         }
+        switch (arrayType) {
+            case "int[]":
+                s += ctx.exp(0).accept(this);
+                s += ctx.exp(1).accept(this);
+                s += "iastore\n";
+                break;
+            case "long[]":
+                s += ctx.exp(0).accept(this);
+                s += ctx.exp(1).accept(this);
+                s += "lastore\n";
+                break;
+        }
+
         return s;
     }
 
@@ -364,7 +361,7 @@ public class JasminVisitor extends JavaBaseVisitor {
     public Object visitBlockStmt(@NotNull JavaParser.BlockStmtContext ctx) {
         String s = "";
         currentBlockStmt = blockStmts.get(ctx.getStart().getLine());
-
+        BlockStmt before = currentBlockStmt;
         for(JavaParser.VarDeclContext varDecl : ctx.varDecl()) {
             varDecl.accept(this);
         }
@@ -372,7 +369,7 @@ public class JasminVisitor extends JavaBaseVisitor {
         for(JavaParser.StmtContext stmt : ctx.stmt()) {
             s += stmt.accept(this);
         }
-        currentBlockStmt = currentBlockStmt.getSuperBlock();
+        currentBlockStmt = before.getSuperBlock();
         return s;
     }
 
@@ -415,10 +412,12 @@ public class JasminVisitor extends JavaBaseVisitor {
 
     @Override
     public Object visitSub(@NotNull JavaParser.SubContext ctx) {
+        prepareTypeChecker();
         String s = "";
         s += (String) ctx.exp(0).accept(this);
         s += (String) ctx.exp(1).accept(this);
         JavaType jt = (JavaType) typeCheckVisitor.visit(ctx.exp(1));
+
         switch(jt.getType()) {
             case "int":
                 s += "isub\n";
@@ -818,7 +817,7 @@ public class JasminVisitor extends JavaBaseVisitor {
             case "boolean":
                 return "Z";
             default:
-                return "L" + type;
+                return "L" + type + ";";
         }
     }
 

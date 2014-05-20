@@ -45,9 +45,11 @@ public class TypeCheckVisitor extends JavaBaseVisitor {
         if(jt1 == null || jt2 == null)
             return null;
 
-        if(jt1.equals(jt2) && (jt1.getType().equals("int") || jt1.getType().equals("long")))
-            return new JavaType(null, "boolean", ctx.getStart().getLine());
-
+        if(jt1.equals(jt2) && (jt1.getType().equals("int") || jt1.getType().equals("long"))) {
+            return new JavaType(null, "boolean", 0);
+        } else if(jt1.getType().equals("int") && jt2.getType().equals("long") || jt1.getType().equals("long") && jt2.getType().equals("int")){
+            return new JavaType(null, "boolean", 0);
+        }
         addError(ctx, "Invalid types in less than : " + jt1.getType() + " and " + jt2.getType());
         return null;
     }
@@ -62,6 +64,11 @@ public class TypeCheckVisitor extends JavaBaseVisitor {
         if(jt1.getType().equals("long") && jt2.getType().equals("int")) {
             return new JavaType(null, "boolean", ctx.getStart().getLine());
         }
+
+        if(jt2.getType().equals("long") && jt1.getType().equals("int")) {
+            return new JavaType(null, "boolean", ctx.getStart().getLine());
+        }
+
         if(isCompatibleTypes(jt1, jt2) || isCompatibleTypes(jt2, jt1))
             return new JavaType(null, "boolean", ctx.getStart().getLine());
 
@@ -167,7 +174,6 @@ public class TypeCheckVisitor extends JavaBaseVisitor {
         for(JavaParser.VarDeclContext varDecl : ctx.varDecl()) {
             varDecl.accept(this);
         }
-
         for(JavaParser.StmtContext stmt : ctx.stmt())
             stmt.accept(this);
         currentMethod = null;
@@ -355,8 +361,10 @@ public class TypeCheckVisitor extends JavaBaseVisitor {
         if(jt2 == null)
             return null;
 
-        if(!(new JavaType(null, getSingleTypeFromArray(jt), 0)).equals(jt2))
-            addError(ctx, "missmatch in type in arr assign");
+        if(!getSingleTypeFromArray(jt).equals(jt2))
+            if(!getSingleTypeFromArray(jt).equals("long") && !jt2.getType().equals("int")) {
+                addError(ctx, "missmatch in type in arr assign");
+            }
 
         return jt;
     }
@@ -432,11 +440,13 @@ public class TypeCheckVisitor extends JavaBaseVisitor {
     @Override
     public Object visitBlockStmt(@NotNull JavaParser.BlockStmtContext ctx) {
         currentBlockStmt = blockStmts.get(ctx.getStart().getLine());
-        Object before = currentBlockStmt;
+        BlockStmt before = currentBlockStmt;
         for(JavaParser.StmtContext stmt : ctx.stmt()) {
             stmt.accept(this);
         }
-        currentBlockStmt = currentBlockStmt.getSuperBlock();
+        if(before != null && currentBlockStmt == null)
+            System.out.println(ctx.getText());
+        currentBlockStmt = before.getSuperBlock();
 
         return null;
     }
@@ -468,7 +478,6 @@ public class TypeCheckVisitor extends JavaBaseVisitor {
             return null;
         if(isCompatibleTypes(jt1, jt2) || isCompatibleTypes(jt2, jt1))
             return new JavaType(null, "boolean", ctx.getStart().getLine());
-
         addError(ctx, "Incompatible types: " + jt1.getType() + " and " + jt2.getType());
         return null;
     }
@@ -497,7 +506,7 @@ public class TypeCheckVisitor extends JavaBaseVisitor {
         if(type1 == null || type2 == null)
             return null;
 
-        if(type1.equals(type2) && (type1.getType().equals("int") || type1.getType().equals("long"))) {
+        if(isCompatibleTypes(type1, type2) && (type1.getType().equals("int") || type1.getType().equals("long"))) {
             return new JavaType(null, "boolean", 0);
         } else if(type1.getType().equals("int") && type2.getType().equals("long") || type1.getType().equals("long") && type2.getType().equals("int")){
             return new JavaType(null, "boolean", 0);
@@ -601,7 +610,6 @@ public class TypeCheckVisitor extends JavaBaseVisitor {
     private JavaType getVariableIfInScope(String ID) {
         JavaType jt = null;
         BlockStmt bs = currentBlockStmt;
-
         if(bs != null) {
             jt = bs.getVariable(ID);
         }
@@ -623,16 +631,18 @@ public class TypeCheckVisitor extends JavaBaseVisitor {
                 }
             }
         }
-
+        if(currentClass == null)
+            System.out.println("null WTF! " + ID);
         if(jt == null)
             jt = currentClass.getVariable(ID);
+        if(jt == null && ID.equals("sub1"))
+            System.out.println(currentClass.getID());
 
+        JavaClass tmpClass = currentClass;
         if(jt == null) {
-            while(jt == null && currentClass.getSuperClass() != null) {
-                if(ID.equals("y"))
-                    System.out.println("checking: " + currentClass.getSuperClass());
-                jt = classes.get(currentClass.getSuperClass()).getVariable(ID);
-                currentClass = classes.get(currentClass.getSuperClass());
+            while(jt == null && tmpClass.getSuperClass() != null) {
+                jt = classes.get(tmpClass.getSuperClass()).getVariable(ID);
+                tmpClass = classes.get(tmpClass.getSuperClass());
             }
         }
 
@@ -659,6 +669,9 @@ public class TypeCheckVisitor extends JavaBaseVisitor {
             System.out.println("#" + jt2.getType());
         if(jt1.equals(jt2))
             return true;
+        if(jt1.getType().equals("int") && jt2.getType().equals("long") || jt1.getType().equals("long") && jt2.getType().equals("int")){
+            return true;
+        }
         JavaClass jc = classes.get(jt2.getType());
         if(jc != null) {
             String superClass = jc.getSuperClass();

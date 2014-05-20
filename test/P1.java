@@ -1,191 +1,141 @@
-// EXT:IWE
-// EXT:BDJ
-// EXT:CLE
-// EXT:CGE
-// EXT:CGT
-// EXT:NBD
-// EXT:CNE
-// EXT:CEQ
-// EXT:LONG
 // EXT:ISC
+// EXT:ICG
+// EXT:LONG
+// EXT:IWE
+// EXT:NBD
+// EXT:CLE
+// EXT:CGT
+// EXT:CGE
+// EXT:CEQ
+// EXT:CNE
+// EXT:BDJ
 
-class Matrix {
-    public static void main(String[] args){
-        internalMatrix m;
-        int i;
-        int j;
-        internalMatrix n;
-        matrixWithPrint o;
-        long x;
-        long y;
-        boolean scrap;
+class _1g64r976g34f4397gf7g94fg3gy3Main
+{
+    public static void main/*main*/(String[/**/] args)//åäöÅÄÖ~\1§
+    {
+        int     i    ;
+        int[   ]ia;
+        long l;
+        long[]la;
+        {
+            boolean b;
+            _1g64r976g34f4397gf7g94fg3gy3Main _1g64r976g34f4397gf7g94fg3gy3Main;
+            MainChild mc;
+            _1g64r976g34f4397gf7g94fg3gy3Main = new _1g64r976g34f4397gf7g94fg3gy3Main();
 
-        m = new internalMatrix();
-        n = new internalMatrix();
-        scrap = m.Init(2,2);
-        scrap = n.Init(2,2);
-
-        //Check the lazy evaluation
-        if((true || false) && true){
-            System.out.println(true);
-        }
-
-        i = 0;
-        j = 0;
-
-        while(i <= m.getMatrixSize()){
-            System.out.println(m.getData(i,j));
-            i = i + 1;
-        }
-
-        i = 0;
-        //Set the m and n matrix to only 2
-        while(i < m.getColumnLength()){
-            j = 0;
-            while(j < m.getColumnLength()){
-                scrap = m.setData(i,j,2);
-                scrap = n.setData(i,j,2);
-                j = j + 1;
-            }
-            i = i + 1;
-        }
-
-        o = m.matrixmultiplication(m,n);
-
-        scrap = o.printMatrix();
-
-        x = 13L;
-        y = 13;
-        i = 13;
-
-        if(x == y){
-            System.out.println(true);
-            if(y == i){
-                System.out.println(true);
-            }
+            mc = new MainChild();
+            b = mc.initialize();
+            l = mc.dostuff(new MainGrandChild());
+            mc = new MainGrandChild();
+            b = mc.initialize();
+            l = mc.dostuff(new MainGrandChild());
+            System.out.println(mc.fibonacci(37));
         }
     }
 }
 
-class internalMatrix{
-    int row;
-    int column;
-    int[] data;
+class MainChild extends/**/_1g64r976g34f4397gf7g94fg3gy3Main
+{
+    int i;
+    long l;
 
-    public boolean Init(int rowIn, int columnIn){
-        row = rowIn;
-        column = columnIn;
-        data = new int[rowIn*columnIn];
+    public boolean initialize()
+    {
+        i = 1337;
+        l = 133L;
         return true;
     }
 
-    public int getRowLength(){
-        return row;
-    }
-
-    public int getColumnLength(){
-        return column;
-    }
-
-    public int getMatrixSize(){
-        return data.length;
-    }
-
-    public boolean setData(int rowIn, int colIn, int dataIn){
-        boolean status;
-        //Check so we're in range
-        if(this.getMatrixSize() > ((this.getRowLength()*rowIn)+colIn)){
-            data[((this.getRowLength()*rowIn)+colIn)] = dataIn;
-            status = true;
-        }
-        else {
-            status = false;
-        }
-        //This will only happen if we're out of range
-        return status;
-    }
-
-    public int getData(int rowIn, int colIn){
-        int result;
-        result = 0;
-        if(((this.getRowLength()*rowIn)+colIn) < this.getMatrixSize()){
-            result = data[((this.getRowLength()*rowIn)+colIn)];
-        }
-        return result;
-    }
-
-    public matrixWithPrint matrixmultiplication(internalMatrix a,internalMatrix b){
-        int aRows;
-        int aColumns;
-        int bRows;
-        int bColumns;
-        int i;
-        int j;
-
-        matrixWithPrint c;
-
-
-        aRows = a.getRowLength();
-        aColumns = a.getColumnLength();
-        bRows = b.getRowLength();
-        bColumns = b.getColumnLength();
-
-        if(aColumns != bRows){
-            c = new matrixWithPrint();
-            if(c.Init(0, 0)){}
-        }
-        else {
-            c = new matrixWithPrint();
-            if(c.Init(aRows,bColumns)){}
-
-            i = 0;
-            while(i < aRows){
-                j = 0;
-                while(j < bColumns){
-                    if(c.setData(i,j,0)){}
-                    j = j + 1;
+    public long dostuff(MainGrandChild mgc)
+    {
+        boolean b;
+        b = true;
+        i = i * (((((i)))) + i) - i;
+        if (i < 5l && i<=4L || i>  7l && i >= 8L || i == 5L && i!=140737488355328L && b || false)
+            if (true)
+                b = !true;
+            else if (false)
+                if (true)
+                    b = b;
+                else
+                    b = !b;
+        {
+            long i;
+            {
+                int l;
+                i = 0;
+                l = 0;
+                {
+                    i = this.getl();
+                    l = this.geti();
+                    System.out.println(this.geti());
+                    System.out.println(this.getl());
                 }
-                i = i + 1;
+                i = 1;
+                l = 1;
+                System.out.println(this.geti());
+                System.out.println(this.getl());
             }
-
-            i = 0;
-            j = 0;
-
-            while(i < aRows){
-                j = 0;
-                while(j < bColumns){
-                    int k;
-                    k = 0;
-                    while(k < aColumns){
-                        if(c.setData(i,j, c.getData(i,j)+(a.getData(i,k)*b.getData(k,j)))){}
-                        k = k + 1;
-                    }
-                    j = j + 1;
-                }
-                i = i + 1;
-            }
+            i = 2;
+            l = 2;
+            System.out.println(this.geti());
+            System.out.println(this.getl());
         }
-        return c;
+        i = 3;
+        l = 3;
+        System.out.println(this.geti());
+        System.out.println(this.getl());
+
+        return i;
+    }
+
+    public int geti()
+    {
+        return i;
+    }
+
+    public long getl()
+    {
+        return l;
+    }
+
+    public int seti(int newi)
+    {
+        i = newi;
+        return i;
+    }
+
+    public long setl(int newl)
+    {
+        l = newl;
+        return l;
+    }
+
+    public long fibonacci(int i)
+    {
+        return i;
     }
 }
 
-class matrixWithPrint extends internalMatrix{
+class MainGrandChild extends MainChild
+{
+    int l;
+    public long dostuff(MainGrandChild arne)
+    {
+        arne = this;
+        i = 6;
+        l = i;
+        return l;
+    }
 
-    public boolean printMatrix(){
-        int i;
-        int j;
-
-        i = 0;
-
-        while(i < this.getRowLength()){
-            j = 0;
-            while(j < this.getColumnLength()){
-                System.out.println(this.getData(i,j));
-                j = j + 1;
-            }
-            i = i + 1;
-        }
-
-        return true;
+    public long fibonacci(int i)
+    {
+        long ans;
+        if (i <= 1)
+            ans = new MainChild().fibonacci(i);
+        else
+            ans = this.fibonacci(i - 2) + new MainGrandChild().fibonacci(i - 1);
+        return ans;
     }
 }
