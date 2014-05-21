@@ -115,7 +115,7 @@ public class JVMMain {
         }
 
         // Stack size calculator
-        StackSizeCalculator stackSizeCalculator = new StackSizeCalculator();
+        StackSizeCalculator stackSizeCalculator = new StackSizeCalculator(typeCheckerVisitor, symbolTableVisitor.getClasses(), symbolTableVisitor.getBlockStmts());
         stackSizeCalculator.visit(tree);
         for(String method : stackSizeCalculator.methodStackSizes.keySet()) {
             System.out.println("Stack size for method: " + method + " = " + stackSizeCalculator.methodStackSizes.get(method));

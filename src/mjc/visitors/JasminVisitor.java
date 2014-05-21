@@ -60,7 +60,7 @@ public class JasminVisitor extends JavaBaseVisitor {
         if(superClass == null) {
             s += ".super java/lang/Object\n";
         } else {
-            s += ".super " + superClass + "\n";
+            s += ".super '" + superClass + "'\n";
         }
 
         s += getInitMethod(superClass);
@@ -102,16 +102,16 @@ public class JasminVisitor extends JavaBaseVisitor {
     public Object visitClassDecl(@NotNull JavaParser.ClassDeclContext ctx) {
         currentClass = ctx.ID().getText();
 
-        String s = ".class " + ctx.ID().getText() + "\n";
+        String s = ".class '" + ctx.ID().getText() + "'\n";
         String superClass = classes.get(ctx.ID().getText()).getSuperClass();
         if(superClass == null) {
             s += ".super java/lang/Object\n";
         } else {
-            s += ".super " + superClass + "\n";
+            s += ".super '" + superClass + "'\n";
         }
 
         for(String variableName : classes.get(currentClass).getVariables().keySet()) {
-            s += ".field " + variableName + " " + getDescriptorFromType(classes.get(currentClass).getVariable(variableName).getType()) + "\n";
+            s += ".field '" + variableName + "' " + getDescriptorFromType(classes.get(currentClass).getVariable(variableName).getType()) + "\n";
         }
 
         s += getInitMethod(superClass);
@@ -172,13 +172,17 @@ public class JasminVisitor extends JavaBaseVisitor {
         }
         s += ctx.exp().accept(this);
 
-        typeCheckVisitor.currentClass = classes.get(currentClass);
-        typeCheckVisitor.currentMethod = classes.get(currentClass).getMethod(currentMethod);
+        prepareTypeChecker();
         JavaType jt = (JavaType) typeCheckVisitor.visit(ctx.exp());
         switch(jt.getType()) {
             case "boolean":
             case "int":
-                s += "ireturn\n";
+                if(getMethodFromId(currentClass, ctx.ID().getText()).getReturnType().getType().equals("long")) {
+                    s += "i2l\n";
+                    s += "lreturn\n";
+                } else {
+                    s += "ireturn\n";
+                }
                 break;
             case "long":
                 s += "lreturn\n";
@@ -195,18 +199,23 @@ public class JasminVisitor extends JavaBaseVisitor {
 
     @Override
     public Object visitAssign(@NotNull JavaParser.AssignContext ctx) {
-
+        prepareTypeChecker();
         JavaType jt = getVariableFromId(ctx.ID().getText());
+        JavaType jt2 = (JavaType) typeCheckVisitor.visit(ctx.exp());
         if(jt.isClassVariable()) {
             String s = "aload 0\n";
             s += (String) ctx.exp().accept(this);
-            return s + "putfield " + currentClass + "/" + jt.getID() + " " + getDescriptorFromType(jt.getType()) + "\n";
+            if(jt.getType().equals("long") && jt2.getType().equals("int"))
+                s += "i2l\n";
+            return s + "putfield '" + currentClass + "/" + jt.getID() + "' " + getDescriptorFromType(jt.getType()) + "\n";
         } else {
             String s = (String) ctx.exp().accept(this);
             switch (jt.getType()) {
                 case "int":
                     return s + "istore " + offset.get(ctx.ID().getText()) + "\n";
                 case "long":
+                    if(jt2.getType().equals("int"))
+                        s += "i2l\n";
                     return s + "lstore " + offset.get(ctx.ID().getText()) + "\n";
                 case "boolean":
                     return s + "istore " + offset.get(ctx.ID().getText()) + "\n";
@@ -232,15 +241,15 @@ public class JasminVisitor extends JavaBaseVisitor {
 
     @Override
     public Object visitArrAssign(@NotNull JavaParser.ArrAssignContext ctx) {
-        // TODO - Helt fel!!!!!!!
         prepareTypeChecker();
         String s = "";
         JavaType jt = getVariableFromId(ctx.ID().getText());
+        JavaType jt2 = (JavaType) typeCheckVisitor.visit(ctx.exp(1));
         String arrayType = jt.getType();
 
         if(jt.isClassVariable()) {
             System.out.println("CLASSVAR");
-            s += "aload 0\ngetfield " + currentClass + "/" + jt.getID() + " " + getDescriptorFromType(jt.getType()) + "\n";
+            s += "aload 0\ngetfield '" + currentClass + "/" + jt.getID() + "' " + getDescriptorFromType(jt.getType()) + "\n";
         } else {
             s += "aload " + offset.get(ctx.ID().getText()) + "\n";
         }
@@ -253,6 +262,8 @@ public class JasminVisitor extends JavaBaseVisitor {
             case "long[]":
                 s += ctx.exp(0).accept(this);
                 s += ctx.exp(1).accept(this);
+                if(jt2.getType().equals("int"))
+                    s += "i2l\n";
                 s += "lastore\n";
                 break;
         }
@@ -308,10 +319,13 @@ public class JasminVisitor extends JavaBaseVisitor {
         s += "invokevirtual " + currentClassToCall + "/" + ctx.ID().getText() + "(";
 
         if(ctx.expList().exp() != null) {
-            JavaType jt = (JavaType) typeCheckVisitor.visit(ctx.expList().exp());
+
+            int i = 0;
+            JavaType jt = getMethodFromId(currentClassToCall, ctx.ID().getText()).getArgument(i);
             s += getDescriptorFromType(jt.getType());
             for(JavaParser.ExpRestContext expRest : ctx.expList().expRest()) {
-                jt = (JavaType) typeCheckVisitor.visit(expRest.exp());
+                i++;
+                jt = getMethodFromId(currentClassToCall, ctx.ID().getText()).getArgument(i);
                 if(jt == null)
                     System.out.println(ctx.getStart().getLine() + " - " + ctx.exp().getText());
                 s += getDescriptorFromType(jt.getType());
@@ -375,7 +389,7 @@ public class JasminVisitor extends JavaBaseVisitor {
 
     @Override
     public Object visitNewObject(@NotNull JavaParser.NewObjectContext ctx) {
-        String s = "new " + ctx.ID() + "\n";
+        String s = "new '" + ctx.ID() + "'\n";
         s += "dup\n";
         s += "invokespecial " + ctx.ID() + "/<init>()V\n";
         return s;
@@ -391,19 +405,29 @@ public class JasminVisitor extends JavaBaseVisitor {
         return null;
     }
 
+    // du ska fixa det här med int + long = long och long + int = long
     @Override
     public Object visitAdd(@NotNull JavaParser.AddContext ctx) {
-        typeCheckVisitor.currentClass = classes.get(currentClass);
-        typeCheckVisitor.currentMethod = classes.get(currentClass).getMethod(currentMethod);
+        prepareTypeChecker();
         String s = "";
         s += (String) ctx.exp(0).accept(this);
-        s += (String) ctx.exp(1).accept(this);
-        JavaType jt = (JavaType) typeCheckVisitor.visit(ctx.exp(1));
+        JavaType jt = (JavaType) typeCheckVisitor.visit(ctx.exp(0));
+        JavaType jt2 = (JavaType) typeCheckVisitor.visit(ctx.exp(1));
         switch(jt.getType()) {
             case "int":
-                s += "iadd\n";
+                if(jt2.getType().equals("long")) {
+                    s += "i2l\n";
+                    s += (String) ctx.exp(1).accept(this);
+                    s += "ladd\n";
+                } else {
+                    s += (String) ctx.exp(1).accept(this);
+                    s += "iadd\n";
+                }
                 break;
             case "long":
+                s += (String) ctx.exp(1).accept(this);
+                if(jt2.getType().equals("int"))
+                    s += "i2l\n";
                 s += "ladd\n";
                 break;
         }
@@ -415,14 +439,25 @@ public class JasminVisitor extends JavaBaseVisitor {
         prepareTypeChecker();
         String s = "";
         s += (String) ctx.exp(0).accept(this);
-        s += (String) ctx.exp(1).accept(this);
-        JavaType jt = (JavaType) typeCheckVisitor.visit(ctx.exp(1));
+        JavaType jt = (JavaType) typeCheckVisitor.visit(ctx.exp(0));
+        JavaType jt2 = (JavaType) typeCheckVisitor.visit(ctx.exp(1));
 
         switch(jt.getType()) {
             case "int":
-                s += "isub\n";
+                if(jt2.getType().equals("long")) {
+                    s += "i2l\n";
+                    s += (String) ctx.exp(1).accept(this);
+                    s += "lsub\n";
+                } else {
+                    s += (String) ctx.exp(1).accept(this);
+                    s += "isub\n";
+                }
                 break;
             case "long":
+                s += (String) ctx.exp(1).accept(this);
+                if(jt2.getType().equals("int")) {
+                    s += "i2l\n";
+                }
                 s += "lsub\n";
                 break;
         }
@@ -431,18 +466,27 @@ public class JasminVisitor extends JavaBaseVisitor {
 
     @Override
     public Object visitProd(@NotNull JavaParser.ProdContext ctx) {
-        typeCheckVisitor.currentClass = classes.get(currentClass);
-        typeCheckVisitor.currentMethod = classes.get(currentClass).getMethod(currentMethod);
+        prepareTypeChecker();
         String s = "";
         s += (String) ctx.exp(0).accept(this);
-        s += (String) ctx.exp(1).accept(this);
-
-        JavaType jt = (JavaType) typeCheckVisitor.visit(ctx.exp(1));
+        JavaType jt = (JavaType) typeCheckVisitor.visit(ctx.exp(0));
+        JavaType jt2 = (JavaType) typeCheckVisitor.visit(ctx.exp(1));
         switch(jt.getType()) {
             case "int":
-                s += "imul\n";
+                if(jt2.getType().equals("long")) {
+                    s += "i2l\n";
+                    s += (String) ctx.exp(1).accept(this);
+                    s += "lmul\n";
+                } else {
+                    s += (String) ctx.exp(1).accept(this);
+                    s += "imul\n";
+                }
                 break;
             case "long":
+                s += (String) ctx.exp(1).accept(this);
+                if(jt2.getType().equals("int")) {
+                    s += "i2l\n";
+                }
                 s += "lmul\n";
                 break;
         }
@@ -470,7 +514,7 @@ public class JasminVisitor extends JavaBaseVisitor {
         if(jt == null)
             System.out.println(ctx.getText());
         if(jt.isClassVariable()) {
-            return "aload 0\ngetfield " + currentClass + "/" + jt.getID() + " " + getDescriptorFromType(jt.getType()) + "\n";
+            return "aload 0\ngetfield '" + currentClass + "/" + jt.getID() + "' " + getDescriptorFromType(jt.getType()) + "\n";
         } else {
             switch (jt.getType()) {
                 case "int":
@@ -487,9 +531,7 @@ public class JasminVisitor extends JavaBaseVisitor {
 
     @Override
     public Object visitSout(@NotNull JavaParser.SoutContext ctx) {
-        typeCheckVisitor.currentClass = classes.get(currentClass);
-        typeCheckVisitor.currentMethod = classes.get(currentClass).getMethod(currentMethod);
-        typeCheckVisitor.currentBlockStmt = currentBlockStmt;
+        prepareTypeChecker();
         String s = "";
 
         s += "getstatic java/lang/System/out Ljava/io/PrintStream;\n";
@@ -503,89 +545,91 @@ public class JasminVisitor extends JavaBaseVisitor {
 
     @Override
     public Object visitLessThan(@NotNull JavaParser.LessThanContext ctx) {
-        typeCheckVisitor.currentClass = classes.get(currentClass);
-        typeCheckVisitor.currentMethod = classes.get(currentClass).getMethod(currentMethod);
+        prepareTypeChecker();
         String s = (String) ctx.exp(0).accept(this);
-        s += (String) ctx.exp(1).accept(this);
-        JavaType jt = (JavaType) typeCheckVisitor.visit(ctx.exp(1));
-        if(jt == null)
-            System.out.println("Failed at: " + ctx.exp(1).getText());
-        switch(jt.getType()) {
-            case "int":
-                s += "if_icmpge label" + ++currentLabel + "\n";
-                s += "ldc_w 1\n";
-                s += "goto label" + ++currentLabel + "\n";
-                s += "label" + (currentLabel - 1) + ":\n";
-                s += "ldc_w 0\n";
-                break;
-            case "long":
-                s += "lcmp\n";
-                s += "ifge label" + ++currentLabel + "\n";
-                s += "ldc_w 1\n";
-                s += "goto label" + ++currentLabel + "\n";
-                s += "label" + (currentLabel - 1) + ":\n";
-                s += "ldc_w 0\n";
-                break;
-        }
+        JavaType jt = (JavaType) typeCheckVisitor.visit(ctx.exp(0));
+        JavaType jt2 = (JavaType) typeCheckVisitor.visit(ctx.exp(1));
 
+        if(jt.getType().equals("int") && jt2.getType().equals("int")) {
+            s += (String) ctx.exp(1).accept(this);
+            s += "if_icmpge label" + ++currentLabel + "\n";
+        } else if(jt.getType().equals("long") || jt2.getType().equals("long")) {
+            if(jt.getType().equals("int")) {
+                s += "i2l\n";
+                s += (String) ctx.exp(1).accept(this);
+            } else if(jt2.getType().equals("int")) {
+                s += (String) ctx.exp(1).accept(this);
+                s += "i2l\n";
+            } else {
+                s += (String) ctx.exp(1).accept(this);
+            }
+            s += "lcmp\n";
+            s += "ifge label" + ++currentLabel + "\n";
+        }
+        s += "ldc_w 1\n";
+        s += "goto label" + ++currentLabel + "\n";
+        s += "label" + (currentLabel - 1) + ":\n";
+        s += "ldc_w 0\n";
         s += "label" + currentLabel + ":\n";
         return s;
     }
 
     @Override
     public Object visitGreaterThanOrEqual(@NotNull JavaParser.GreaterThanOrEqualContext ctx) {
-        typeCheckVisitor.currentClass = classes.get(currentClass);
-        typeCheckVisitor.currentMethod = classes.get(currentClass).getMethod(currentMethod);
+        prepareTypeChecker();
         String s = (String) ctx.exp(0).accept(this);
-        s += (String) ctx.exp(1).accept(this);
-        JavaType jt = (JavaType) typeCheckVisitor.visit(ctx.exp(1));
-        switch(jt.getType()) {
-            case "int":
-                s += "if_icmplt label" + ++currentLabel + "\n";
-                s += "ldc_w 1\n";
-                s += "goto label" + ++currentLabel + "\n";
-                s += "label" + (currentLabel - 1) + ":\n";
-                s += "ldc_w 0\n";
-                break;
-            case "long":
-                s += "lcmp\n";
-                s += "iflt label" + ++currentLabel + "\n";
-                s += "ldc_w 1\n";
-                s += "goto label" + ++currentLabel + "\n";
-                s += "label" + (currentLabel - 1) + ":\n";
-                s += "ldc_w 0\n";
-                break;
+        JavaType jt = (JavaType) typeCheckVisitor.visit(ctx.exp(0));
+        JavaType jt2 = (JavaType) typeCheckVisitor.visit(ctx.exp(1));
+        if(jt.getType().equals("int") && jt2.getType().equals("int")) {
+            s += (String) ctx.exp(1).accept(this);
+            s += "if_icmplt label" + ++currentLabel + "\n";
+        } else if(jt.getType().equals("long") || jt2.getType().equals("long")) {
+            if(jt.getType().equals("int")) {
+                s += "i2l\n";
+                s += (String) ctx.exp(1).accept(this);
+            } else if(jt2.getType().equals("int")) {
+                s += (String) ctx.exp(1).accept(this);
+                s += "i2l\n";
+            } else {
+                s += (String) ctx.exp(1).accept(this);
+            }
+            s += "lcmp\n";
+            s += "iflt label" + ++currentLabel + "\n";
         }
-
+        s += "ldc_w 1\n";
+        s += "goto label" + ++currentLabel + "\n";
+        s += "label" + (currentLabel - 1) + ":\n";
+        s += "ldc_w 0\n";
         s += "label" + currentLabel + ":\n";
         return s;
     }
 
     @Override
     public Object visitGreaterThan(@NotNull JavaParser.GreaterThanContext ctx) {
-        typeCheckVisitor.currentClass = classes.get(currentClass);
-        typeCheckVisitor.currentMethod = classes.get(currentClass).getMethod(currentMethod);
+        prepareTypeChecker();
         String s = (String) ctx.exp(0).accept(this);
-        s += (String) ctx.exp(1).accept(this);
-        JavaType jt = (JavaType) typeCheckVisitor.visit(ctx.exp(1));
-        switch(jt.getType()) {
-            case "int":
-                s += "if_icmple label" + ++currentLabel + "\n";
-                s += "ldc_w 1\n";
-                s += "goto label" + ++currentLabel + "\n";
-                s += "label" + (currentLabel - 1) + ":\n";
-                s += "ldc_w 0\n";
-                break;
-            case "long":
-                s += "lcmp\n";
-                s += "ifle label" + ++currentLabel + "\n";
-                s += "ldc_w 1\n";
-                s += "goto label" + ++currentLabel + "\n";
-                s += "label" + (currentLabel - 1) + ":\n";
-                s += "ldc_w 0\n";
-                break;
+        JavaType jt = (JavaType) typeCheckVisitor.visit(ctx.exp(0));
+        JavaType jt2 = (JavaType) typeCheckVisitor.visit(ctx.exp(1));
+        if(jt.getType().equals("int") && jt2.getType().equals("int")) {
+            s += (String) ctx.exp(1).accept(this);
+            s += "if_icmple label" + ++currentLabel + "\n";
+        } else if(jt.getType().equals("long") || jt2.getType().equals("long")) {
+            if(jt.getType().equals("int")) {
+                s += "i2l\n";
+                s += (String) ctx.exp(1).accept(this);
+            } else if(jt2.getType().equals("int")) {
+                s += (String) ctx.exp(1).accept(this);
+                s += "i2l\n";
+            } else {
+                s += (String) ctx.exp(1).accept(this);
+            }
+            s += "lcmp\n";
+            s += "ifle label" + ++currentLabel + "\n";
         }
-
+        s += "ldc_w 1\n";
+        s += "goto label" + ++currentLabel + "\n";
+        s += "label" + (currentLabel - 1) + ":\n";
+        s += "ldc_w 0\n";
         s += "label" + currentLabel + ":\n";
         return s;
     }
@@ -604,47 +648,50 @@ public class JasminVisitor extends JavaBaseVisitor {
 
     @Override
     public Object visitOr(@NotNull JavaParser.OrContext ctx) {
+
+        int isTrue = ++currentLabel;
+        int afterOr = ++currentLabel;
+
         String s = (String) ctx.exp(0).accept(this);
+
+        s += "ifne label" + isTrue + "\n";
         s += (String) ctx.exp(1).accept(this);
-        s += "ifeq label" + (currentLabel + 1) + "\n";
-        s += "pop\n";
-        s += "ldc_w 1\n";
-        s += "goto label" + (currentLabel + 3) + "\n";
-        s += "label" + ++currentLabel + ":\n";
-        s += "ifeq label" + (currentLabel + 1) + "\n";
-        s += "ldc_w 1\n";
-        s += "goto label" + (currentLabel + 2) + "\n";
-        s += "label" + ++currentLabel + ":\n";
+        s += "ifne label" + isTrue + "\n";
         s += "ldc_w 0\n";
-        s += "label" + ++currentLabel + ":\n";
+        s += "goto label" + afterOr + "\n";
+        s += "label" + isTrue + ":\n";
+        s += "ldc_w 1\n";
+        s += "label" + afterOr + ":\n";
         return s;
     }
 
     @Override
     public Object visitLessThanOrEqual(@NotNull JavaParser.LessThanOrEqualContext ctx) {
-        typeCheckVisitor.currentClass = classes.get(currentClass);
-        typeCheckVisitor.currentMethod = classes.get(currentClass).getMethod(currentMethod);
+        prepareTypeChecker();
         String s = (String) ctx.exp(0).accept(this);
-        s += (String) ctx.exp(1).accept(this);
-        JavaType jt = (JavaType) typeCheckVisitor.visit(ctx.exp(1));
-        switch(jt.getType()) {
-            case "int":
-                s += "if_icmpgt label" + ++currentLabel + "\n";
-                s += "ldc_w 1\n";
-                s += "goto label" + ++currentLabel + "\n";
-                s += "label" + (currentLabel - 1) + ":\n";
-                s += "ldc_w 0\n";
-                break;
-            case "long":
-                s += "lcmp\n";
-                s += "ifgt label" + ++currentLabel + "\n";
-                s += "ldc_w 1\n";
-                s += "goto label" + ++currentLabel + "\n";
-                s += "label" + (currentLabel - 1) + ":\n";
-                s += "ldc_w 0\n";
-                break;
-        }
+        JavaType jt = (JavaType) typeCheckVisitor.visit(ctx.exp(0));
+        JavaType jt2 = (JavaType) typeCheckVisitor.visit(ctx.exp(1));
 
+        if(jt.getType().equals("int") && jt2.getType().equals("int")) {
+            s += (String) ctx.exp(1).accept(this);
+            s += "if_icmpgt label" + ++currentLabel + "\n";
+        } else if(jt.getType().equals("long") || jt2.getType().equals("long")) {
+            if(jt.getType().equals("int")) {
+                s += "i2l\n";
+                s += (String) ctx.exp(1).accept(this);
+            } else if(jt2.getType().equals("int")) {
+                s += (String) ctx.exp(1).accept(this);
+                s += "i2l\n";
+            } else {
+                s += (String) ctx.exp(1).accept(this);
+            }
+            s += "lcmp\n";
+            s += "ifgt label" + ++currentLabel + "\n";
+        }
+        s += "ldc_w 1\n";
+        s += "goto label" + ++currentLabel + "\n";
+        s += "label" + (currentLabel - 1) + ":\n";
+        s += "ldc_w 0\n";
         s += "label" + currentLabel + ":\n";
         return s;
     }
@@ -653,69 +700,68 @@ public class JasminVisitor extends JavaBaseVisitor {
     public Object visitEquals(@NotNull JavaParser.EqualsContext ctx) {
         prepareTypeChecker();
         String s = (String) ctx.exp(0).accept(this);
-        s += (String) ctx.exp(1).accept(this);
         JavaType jt = (JavaType) typeCheckVisitor.visit(ctx.exp(0));
-        if(jt == null)
-            System.out.println("Failed at " + ctx.getText());
-        if(jt.getType().equals("int") || jt.getType().equals("boolean")) {
+        JavaType jt2 = (JavaType) typeCheckVisitor.visit(ctx.exp(1));
+
+        if(jt.getType().equals("int") && jt2.getType().equals("int") || jt.getType().equals("boolean") && jt2.getType().equals("boolean")) {
+            s += (String) ctx.exp(1).accept(this);
             s += "if_icmpne label" + ++currentLabel + "\n";
-            s += "ldc_w 1\n";
-            s += "goto label" + ++currentLabel + "\n";
-            s += "label" + (currentLabel - 1) + ":\n";
-            s += "ldc_w 0\n";
-            s += "label" + currentLabel + ":\n";
-        } else if(jt.getType().equals("long")) {
+        } else if(jt.getType().equals("long") || jt2.getType().equals("long")) {
+            if(jt.getType().equals("int")) {
+                s += "i2l\n";
+                s += (String) ctx.exp(1).accept(this);
+            } else if(jt2.getType().equals("int")) {
+                s += (String) ctx.exp(1).accept(this);
+                s += "i2l\n";
+            } else {
+                s += (String) ctx.exp(1).accept(this);
+            }
             s += "lcmp\n";
             s += "ifne label" + ++currentLabel + "\n";
-            s += "ldc_w 1\n";
-            s += "goto label" + ++currentLabel + "\n";
-            s += "label" + (currentLabel - 1) + ":\n";
-            s += "ldc_w 0\n";
-            s += "label" + currentLabel + ":\n";
         } else {
+            s += (String) ctx.exp(1).accept(this);
             s += "if_acmpne label" + ++currentLabel + "\n";
-            s += "ldc_w 1\n";
-            s += "goto label" + ++currentLabel + "\n";
-            s += "label" + (currentLabel - 1) + ":\n";
-            s += "ldc_w 0\n";
-            s += "label" + currentLabel + ":\n";
         }
+        s += "ldc_w 1\n";
+        s += "goto label" + ++currentLabel + "\n";
+        s += "label" + (currentLabel - 1) + ":\n";
+        s += "ldc_w 0\n";
+        s += "label" + currentLabel + ":\n";
 
         return s;
     }
 
     @Override
     public Object visitNotEquals(@NotNull JavaParser.NotEqualsContext ctx) {
-        typeCheckVisitor.currentClass = classes.get(currentClass);
-        typeCheckVisitor.currentMethod = classes.get(currentClass).getMethod(currentMethod);
+        prepareTypeChecker();
         String s = (String) ctx.exp(0).accept(this);
-        s += (String) ctx.exp(1).accept(this);
         JavaType jt = (JavaType) typeCheckVisitor.visit(ctx.exp(0));
-        if(jt == null)
-            System.out.println("Failed at " + ctx.getText());
-        if(jt.getType().equals("int") || jt.getType().equals("boolean")) {
+        JavaType jt2 = (JavaType) typeCheckVisitor.visit(ctx.exp(1));
+
+        if(jt.getType().equals("int") && jt2.getType().equals("int") || jt.getType().equals("boolean") && jt2.getType().equals("boolean")) {
+            s += (String) ctx.exp(1).accept(this);
             s += "if_icmpeq label" + ++currentLabel + "\n";
-            s += "ldc_w 1\n";
-            s += "goto label" + ++currentLabel + "\n";
-            s += "label" + (currentLabel - 1) + ":\n";
-            s += "ldc_w 0\n";
-            s += "label" + currentLabel + ":\n";
-        } else if(jt.getType().equals("long")) {
+        } else if(jt.getType().equals("long") || jt2.getType().equals("long")) {
+            if(jt.getType().equals("int")) {
+                s += "i2l\n";
+                s += (String) ctx.exp(1).accept(this);
+            } else if(jt2.getType().equals("int")) {
+                s += (String) ctx.exp(1).accept(this);
+                s += "i2l\n";
+            } else {
+                s += (String) ctx.exp(1).accept(this);
+            }
             s += "lcmp\n";
             s += "ifeq label" + ++currentLabel + "\n";
-            s += "ldc_w 1\n";
-            s += "goto label" + ++currentLabel + "\n";
-            s += "label" + (currentLabel - 1) + ":\n";
-            s += "ldc_w 0\n";
-            s += "label" + currentLabel + ":\n";
         } else {
+            s += (String) ctx.exp(1).accept(this);
             s += "if_acmpeq label" + ++currentLabel + "\n";
-            s += "ldc_w 1\n";
-            s += "goto label" + ++currentLabel + "\n";
-            s += "label" + (currentLabel - 1) + ":\n";
-            s += "ldc_w 0\n";
-            s += "label" + currentLabel + ":\n";
         }
+        s += "ldc_w 1\n";
+        s += "goto label" + ++currentLabel + "\n";
+        s += "label" + (currentLabel - 1) + ":\n";
+        s += "ldc_w 0\n";
+        s += "label" + currentLabel + ":\n";
 
         return s;
     }
@@ -723,18 +769,18 @@ public class JasminVisitor extends JavaBaseVisitor {
     @Override
     public Object visitAnd(@NotNull JavaParser.AndContext ctx) {
         String s = (String) ctx.exp(0).accept(this);
+        int secondExp = ++currentLabel;
+        int isFalse = ++currentLabel;
+        int afterAnd = ++currentLabel;
 
+        s += "ifeq label" + isFalse + "\n";
         s += (String) ctx.exp(1).accept(this);
-        s += "ifeq label" + (currentLabel + 1) + "\n";
-        s += "ifeq label" + (currentLabel + 2) + "\n";
+        s += "ifeq label" + isFalse + "\n";
         s += "ldc_w 1\n";
-        s += "goto label" + (currentLabel + 3) + "\n";
-        s += "label" + ++currentLabel + ":\n";
-        s += "pop\n";
-        s += "label" + ++currentLabel + ":\n";
+        s += "goto label" + afterAnd + "\n";
+        s += "label" + isFalse + ":\n";
         s += "ldc_w 0\n";
-        s += "goto label" + (currentLabel + 1) + "\n";
-        s += "label" + ++currentLabel + ":\n";
+        s += "label" + afterAnd + ":\n";
         return s;
     }
 
@@ -802,6 +848,20 @@ public class JasminVisitor extends JavaBaseVisitor {
         }
 
         return jt;
+    }
+
+    private JavaMethod getMethodFromId(String classID, String methodID) {
+        JavaClass jc = classes.get(classID);
+        JavaMethod jm = jc.getMethod(methodID);
+
+        while(jm == null) {
+            if(jc.getSuperClass() == null)
+                break;
+            jc = classes.get(jc.getSuperClass());
+            jm = jc.getMethod(methodID);
+        }
+
+        return jm;
     }
 
     private String getDescriptorFromType(String type) {

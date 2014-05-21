@@ -460,8 +460,6 @@ public class TypeCheckVisitor extends JavaBaseVisitor {
     @Override
     public Object visitId(@NotNull JavaParser.IdContext ctx) {
         JavaType jt = getVariableIfInScope(ctx.ID().getText());
-        if(jt.getID().equals("b"))
-            System.out.println(jt.getType());
         if(jt == null) {
             addError(ctx, "Variabeln " + ctx.ID().getText() + " finns inte i scope");
         }
